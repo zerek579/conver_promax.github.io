@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertidor Universal Pro</title>
+    
+    <!-- 1. Cargar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Cargar Fuente de Iconos (FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 3. Cargar React y ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- 4. Cargar Babel para entender JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Fuente Inter para un look moderno */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- CONFIGURACIÓN DE DATOS ---
+        // Usamos clases de FontAwesome (fa-...) en lugar de componentes importados
+        const CATEGORIES = {
+            longitud: {
+                label: 'Longitud',
+                icon: 'fa-ruler-horizontal',
+                base: 'm',
+                units: {
+                    m: { label: 'Metros (m)', factor: 1 },
+                    km: { label: 'Kilómetros (km)', factor: 1000 },
+                    cm: { label: 'Centímetros (cm)', factor: 0.01 },
+                    mm: { label: 'Milímetros (mm)', factor: 0.001 },
+                    in: { label: 'Pulgadas (in)', factor: 0.0254 },
+                    ft: { label: 'Pies (ft)', factor: 0.3048 },
+                    yd: { label: 'Yardas (yd)', factor: 0.9144 },
+                    mi: { label: 'Millas (mi)', factor: 1609.34 }
+                }
+            },
+            masa: {
+                label: 'Masa',
+                icon: 'fa-weight-hanging',
+                base: 'kg',
+                units: {
+                    kg: { label: 'Kilogramos (kg)', factor: 1 },
+                    g: { label: 'Gramos (g)', factor: 0.001 },
+                    mg: { label: 'Miligramos (mg)', factor: 0.000001 },
+                    lb: { label: 'Libras (lb)', factor: 0.453592 },
+                    oz: { label: 'Onzas (oz)', factor: 0.0283495 },
+                    t: { label: 'Toneladas (t)', factor: 1000 }
+                }
+            },
+            energia: {
+                label: 'Energía',
+                icon: 'fa-bolt',
+                base: 'J',
+                units: {
+                    J: { label: 'Julios (J)', factor: 1 },
+                    kJ: { label: 'Kilojulios (kJ)', factor: 1000 },
+                    cal: { label: 'Calorías (cal)', factor: 4.184 },
+                    kcal: { label: 'Kilocalorías (kcal)', factor: 4184 },
+                    kWh: { label: 'Kilovatio-hora (kWh)', factor: 3600000 },
+                    eV: { label: 'Electronvoltios (eV)', factor: 1.6022e-19 }
+                }
+            },
+            frecuencia: {
+                label: 'Frecuencia',
+                icon: 'fa-wave-square',
+                base: 'Hz',
+                units: {
+                    Hz: { label: 'Hercios (Hz)', factor: 1 },
+                    kHz: { label: 'Kilohercios (kHz)', factor: 1000 },
+                    MHz: { label: 'Megahercios (MHz)', factor: 1e6 },
+                    GHz: { label: 'Gigahercios (GHz)', factor: 1e9 },
+                    rpm: { label: 'RPM', factor: 1/60 }
+                }
+            },
+            velocidad: {
+                label: 'Velocidad',
+                icon: 'fa-tachometer-alt',
+                base: 'm/s',
+                units: {
+                    ms: { label: 'Metros/seg (m/s)', factor: 1 },
+                    kmh: { label: 'Km/hora (km/h)', factor: 0.277778 },
+                    mph: { label: 'Millas/hora (mph)', factor: 0.44704 },
+                    kn: { label: 'Nudos (kn)', factor: 0.514444 },
+                    mach: { label: 'Mach (nivel del mar)', factor: 343 }
+                }
+            },
+            tiempo: {
+                label: 'Tiempo',
+                icon: 'fa-clock',
+                base: 's',
+                units: {
+                    s: { label: 'Segundos (s)', factor: 1 },
+                    min: { label: 'Minutos', factor: 60 },
+                    h: { label: 'Horas', factor: 3600 },
+                    d: { label: 'Días', factor: 86400 },
+                    wk: { label: 'Semanas', factor: 604800 },
+                    mo: { label: 'Meses (30 días)', factor: 2592000 },
+                    y: { label: 'Años (365 días)', factor: 31536000 }
+                }
+            },
+            volumen: {
+                label: 'Volumen',
+                icon: 'fa-flask',
+                base: 'l',
+                units: {
+                    l: { label: 'Litros (L)', factor: 1 },
+                    ml: { label: 'Mililitros (ml)', factor: 0.001 },
+                    m3: { label: 'Metros Cúbicos (m³)', factor: 1000 },
+                    cm3: { label: 'Centímetros Cúbicos (cc)', factor: 0.001 },
+                    gal: { label: 'Galones US (gal)', factor: 3.78541 },
+                    floz: { label: 'Onzas Fluidas US', factor: 0.0295735 }
+                }
+            },
+            area: {
+                label: 'Área',
+                icon: 'fa-border-all',
+                base: 'm2',
+                units: {
+                    m2: { label: 'Metros Cuadrados (m²)', factor: 1 },
+                    km2: { label: 'Kilómetros Cuadrados', factor: 1e6 },
+                    cm2: { label: 'Centímetros Cuadrados', factor: 0.0001 },
+                    ha: { label: 'Hectáreas', factor: 10000 },
+                    ac: { label: 'Acres', factor: 4046.86 },
+                    ft2: { label: 'Pies Cuadrados', factor: 0.092903 }
+                }
+            },
+            temperatura: {
+                label: 'Temperatura',
+                icon: 'fa-temperature-high',
+                units: {
+                    C: { label: 'Celsius (°C)' },
+                    F: { label: 'Fahrenheit (°F)' },
+                    K: { label: 'Kelvin (K)' }
+                }
+            }
+        };
+
+        function App() {
+            const [activeCategory, setActiveCategory] = useState('longitud');
+            const [amount, setAmount] = useState('1');
+            
+            // Estado para las unidades
+            const [fromUnit, setFromUnit] = useState('m');
+            const [toUnit, setToUnit] = useState('km');
+            
+            const [copied, setCopied] = useState(false);
+
+            // --- RESOLUCIÓN SEGURA DE UNIDADES ---
+            const currentCategoryData = CATEGORIES[activeCategory];
+            const availableUnits = Object.keys(currentCategoryData.units);
+            
+            // Si la unidad actual no existe en la nueva categoría, usar la primera disponible por defecto
+            const safeFromUnit = currentCategoryData.units[fromUnit] ? fromUnit : availableUnits[0];
+            const safeToUnit = currentCategoryData.units[toUnit] ? toUnit : (availableUnits[1] || availableUnits[0]);
+
+            // Sincronizar estado
+            useEffect(() => {
+                if (safeFromUnit !== fromUnit) setFromUnit(safeFromUnit);
+                if (safeToUnit !== toUnit) setToUnit(safeToUnit);
+            }, [activeCategory, safeFromUnit, safeToUnit, fromUnit, toUnit]);
+
+            // --- LÓGICA DE CÁLCULO ---
+            const result = useMemo(() => {
+                if (amount === '' || isNaN(amount)) return '---';
+
+                const val = parseFloat(amount);
+                let converted = 0;
+
+                if (activeCategory === 'temperatura') {
+                    let celsius = val;
+                    if (safeFromUnit === 'F') celsius = (val - 32) * 5/9;
+                    if (safeFromUnit === 'K') celsius = val - 273.15;
+                    
+                    if (safeToUnit === 'C') converted = celsius;
+                    else if (safeToUnit === 'F') converted = (celsius * 9/5) + 32;
+                    else if (safeToUnit === 'K') converted = celsius + 273.15;
+                    else converted = celsius;
+                } else {
+                    const fromFactor = currentCategoryData.units[safeFromUnit]?.factor || 1;
+                    const toFactor = currentCategoryData.units[safeToUnit]?.factor || 1;
+                    converted = (val * fromFactor) / toFactor;
+                }
+
+                // Redondeo inteligente
+                return Math.abs(converted) < 0.000001 && converted !== 0
+                    ? converted.toExponential(4) 
+                    : parseFloat(converted.toPrecision(6)).toString();
+            }, [amount, activeCategory, safeFromUnit, safeToUnit, currentCategoryData]);
+
+            const handleSwap = () => {
+                setFromUnit(safeToUnit);
+                setToUnit(safeFromUnit);
+            };
+
+            const handleCopy = () => {
+                const unitLabel = currentCategoryData.units[safeToUnit].label.split('(')[0].trim();
+                navigator.clipboard.writeText(`${result} ${unitLabel}`);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+                
+                    {/* Header Mobile-Friendly */}
+                    <header className="bg-indigo-600 text-white p-4 shadow-md z-10 sticky top-0">
+                        <div className="flex items-center justify-between max-w-md mx-auto">
+                            <div className="flex items-center space-x-2">
+                                <i className={`fa-solid ${currentCategoryData.icon} text-xl`}></i>
+                                <h1 className="text-xl font-bold tracking-tight">Convertidor Pro</h1>
+                            </div>
+                            <div className="text-indigo-200 text-xs font-medium bg-indigo-800 px-2 py-1 rounded-full">
+                                {currentCategoryData.label}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 max-w-md mx-auto w-full flex flex-col space-y-6">
+                        
+                        {/* Category Selector Grid */}
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Categorías</label>
+                            <div className="grid grid-cols-4 gap-3">
+                                {Object.entries(CATEGORIES).map(([key, data]) => {
+                                    const isActive = activeCategory === key;
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => setActiveCategory(key)}
+                                            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 ${
+                                                isActive 
+                                                ? 'bg-indigo-50 text-indigo-600 ring-2 ring-indigo-500 ring-opacity-50' 
+                                                : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            <i className={`fa-solid ${data.icon} text-lg mb-1`}></i>
+                                            <span className="text-[10px] font-medium truncate w-full text-center">{data.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Conversion Card */}
+                        <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-pink-500"></div>
+                            
+                            {/* Input Section */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm text-gray-500 font-medium ml-1">Cantidad</label>
+                                    <input
+                                        type="number"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        className="w-full text-4xl font-bold text-gray-800 bg-transparent border-b-2 border-gray-200 focus:border-indigo-500 focus:outline-none py-2 transition-colors placeholder-gray-300"
+                                        placeholder="0"
+                                    />
+                                </div>
+
+                                <div className="flex items-center space-x-3 bg-gray-50 p-1 rounded-xl">
+                                    <select
+                                        value={safeFromUnit}
+                                        onChange={(e) => setFromUnit(e.target.value)}
+                                        className="flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
+                                    >
+                                        {Object.entries(currentCategoryData.units).map(([key, unit]) => (
+                                            <option key={key} value={key}>{unit.label}</option>
+                                        ))}
+                                    </select>
+                                    
+                                    <button 
+                                        onClick={handleSwap}
+                                        className="p-3 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors active:scale-95"
+                                    >
+                                        <i className="fa-solid fa-right-left text-lg"></i>
+                                    </button>
+
+                                    <select
+                                        value={safeToUnit}
+                                        onChange={(e) => setToUnit(e.target.value)}
+                                        className="flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
+                                    >
+                                        {Object.entries(currentCategoryData.units).map(([key, unit]) => (
+                                            <option key={key} value={key}>{unit.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Result Section */}
+                            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+                                <p className="text-sm text-gray-400 font-medium mb-1">Resultado</p>
+                                <div className="flex flex-col items-center justify-center cursor-pointer group" onClick={handleCopy}>
+                                    <span className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 break-all">
+                                        {result}
+                                    </span>
+                                    <span className="text-lg text-gray-500 font-medium mt-1">
+                                        {currentCategoryData.units[safeToUnit].label}
+                                    </span>
+                                    
+                                    <div className="mt-4 flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}></i>
+                                        <span>{copied ? 'Copiado' : 'Copiar'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+                    
+                    {/* Footer */}
+                    <footer className="p-4 text-center text-gray-400 text-xs">
+                        <p>Convertidor Universal • React & Tailwind</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
