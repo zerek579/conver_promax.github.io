@@ -258,7 +258,7 @@
                         </div>
 
                         {/* Conversion Card */}
-                        <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 relative overflow-hidden">
+                        <div className="bg-white p-4 sm:p-6 rounded-3xl shadow-lg border border-gray-100 relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-pink-500"></div>
                             
                             {/* Input Section */}
@@ -269,16 +269,17 @@
                                         type="number"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full text-4xl font-bold text-gray-800 bg-transparent border-b-2 border-gray-200 focus:border-indigo-500 focus:outline-none py-2 transition-colors placeholder-gray-300"
+                                        className="w-full text-3xl sm:text-4xl font-bold text-gray-800 bg-transparent border-b-2 border-gray-200 focus:border-indigo-500 focus:outline-none py-2 transition-colors placeholder-gray-300"
                                         placeholder="0"
                                     />
                                 </div>
 
-                                <div className="flex items-center space-x-3 bg-gray-50 p-1 rounded-xl">
+                                {/* Area corregida: Flex-col en movil, Flex-row en escritorio */}
+                                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 bg-gray-50 p-2 rounded-xl">
                                     <select
                                         value={safeFromUnit}
                                         onChange={(e) => setFromUnit(e.target.value)}
-                                        className="flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
+                                        className="w-full sm:flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
                                     >
                                         {Object.entries(currentCategoryData.units).map(([key, unit]) => (
                                             <option key={key} value={key}>{unit.label}</option>
@@ -287,15 +288,17 @@
                                     
                                     <button 
                                         onClick={handleSwap}
-                                        className="p-3 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors active:scale-95"
+                                        className="p-2 sm:p-3 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors active:scale-95 shrink-0"
+                                        title="Intercambiar"
                                     >
-                                        <i className="fa-solid fa-right-left text-lg"></i>
+                                        {/* Rotamos el icono 90 grados en móvil para que apunte arriba/abajo */}
+                                        <i className="fa-solid fa-right-left text-lg transform rotate-90 sm:rotate-0"></i>
                                     </button>
 
                                     <select
                                         value={safeToUnit}
                                         onChange={(e) => setToUnit(e.target.value)}
-                                        className="flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
+                                        className="w-full sm:flex-1 bg-white text-gray-700 py-3 px-3 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm appearance-none"
                                     >
                                         {Object.entries(currentCategoryData.units).map(([key, unit]) => (
                                             <option key={key} value={key}>{unit.label}</option>
