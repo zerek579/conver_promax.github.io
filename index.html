@@ -1,353 +1,322 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertidor Universal Pro</title>
-    
-    <!-- 1. Cargar Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 2. Cargar Fuente de Iconos (FontAwesome) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- 3. Cargar React y ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    
-    <!-- 4. Cargar Babel para entender JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <style>
-        /* Fuente Inter para un look moderno */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 min-h-screen">
-
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-
-        // --- CONFIGURACIÓN DE DATOS ---
-        // Usamos clases de FontAwesome (fa-...) en lugar de componentes importados
-        const CATEGORIES = {
-            longitud: {
-                label: 'Longitud',
-                icon: 'fa-ruler-horizontal',
-                base: 'm',
-                units: {
-                    m: { label: 'Metros (m)', factor: 1 },
-                    km: { label: 'Kilómetros (km)', factor: 1000 },
-                    cm: { label: 'Centímetros (cm)', factor: 0.01 },
-                    mm: { label: 'Milímetros (mm)', factor: 0.001 },
-                    in: { label: 'Pulgadas (in)', factor: 0.0254 },
-                    ft: { label: 'Pies (ft)', factor: 0.3048 },
-                    yd: { label: 'Yardas (yd)', factor: 0.9144 },
-                    mi: { label: 'Millas (mi)', factor: 1609.34 }
-                }
-            },
-            masa: {
-                label: 'Masa',
-                icon: 'fa-weight-hanging',
-                base: 'kg',
-                units: {
-                    kg: { label: 'Kilogramos (kg)', factor: 1 },
-                    g: { label: 'Gramos (g)', factor: 0.001 },
-                    mg: { label: 'Miligramos (mg)', factor: 0.000001 },
-                    lb: { label: 'Libras (lb)', factor: 0.453592 },
-                    oz: { label: 'Onzas (oz)', factor: 0.0283495 },
-                    t: { label: 'Toneladas (t)', factor: 1000 }
-                }
-            },
-            energia: {
-                label: 'Energía',
-                icon: 'fa-bolt',
-                base: 'J',
-                units: {
-                    J: { label: 'Julios (J)', factor: 1 },
-                    kJ: { label: 'Kilojulios (kJ)', factor: 1000 },
-                    cal: { label: 'Calorías (cal)', factor: 4.184 },
-                    kcal: { label: 'Kilocalorías (kcal)', factor: 4184 },
-                    kWh: { label: 'Kilovatio-hora (kWh)', factor: 3600000 },
-                    eV: { label: 'Electronvoltios (eV)', factor: 1.6022e-19 }
-                }
-            },
-            frecuencia: {
-                label: 'Frecuencia',
-                icon: 'fa-wave-square',
-                base: 'Hz',
-                units: {
-                    Hz: { label: 'Hercios (Hz)', factor: 1 },
-                    kHz: { label: 'Kilohercios (kHz)', factor: 1000 },
-                    MHz: { label: 'Megahercios (MHz)', factor: 1e6 },
-                    GHz: { label: 'Gigahercios (GHz)', factor: 1e9 },
-                    rpm: { label: 'RPM', factor: 1/60 }
-                }
-            },
-            velocidad: {
-                label: 'Velocidad',
-                icon: 'fa-tachometer-alt',
-                base: 'm/s',
-                units: {
-                    ms: { label: 'Metros/seg (m/s)', factor: 1 },
-                    kmh: { label: 'Km/hora (km/h)', factor: 0.277778 },
-                    mph: { label: 'Millas/hora (mph)', factor: 0.44704 },
-                    kn: { label: 'Nudos (kn)', factor: 0.514444 },
-                    mach: { label: 'Mach (nivel del mar)', factor: 343 }
-                }
-            },
-            tiempo: {
-                label: 'Tiempo',
-                icon: 'fa-clock',
-                base: 's',
-                units: {
-                    s: { label: 'Segundos (s)', factor: 1 },
-                    min: { label: 'Minutos', factor: 60 },
-                    h: { label: 'Horas', factor: 3600 },
-                    d: { label: 'Días', factor: 86400 },
-                    wk: { label: 'Semanas', factor: 604800 },
-                    mo: { label: 'Meses (30 días)', factor: 2592000 },
-                    y: { label: 'Años (365 días)', factor: 31536000 }
-                }
-            },
-            volumen: {
-                label: 'Volumen',
-                icon: 'fa-flask',
-                base: 'l',
-                units: {
-                    l: { label: 'Litros (L)', factor: 1 },
-                    ml: { label: 'Mililitros (ml)', factor: 0.001 },
-                    m3: { label: 'Metros Cúbicos (m³)', factor: 1000 },
-                    cm3: { label: 'Centímetros Cúbicos (cc)', factor: 0.001 },
-                    gal: { label: 'Galones US (gal)', factor: 3.78541 },
-                    floz: { label: 'Onzas Fluidas US', factor: 0.0295735 }
-                }
-            },
-            area: {
-                label: 'Área',
-                icon: 'fa-border-all',
-                base: 'm2',
-                units: {
-                    m2: { label: 'Metros Cuadrados (m²)', factor: 1 },
-                    km2: { label: 'Kilómetros Cuadrados', factor: 1e6 },
-                    cm2: { label: 'Centímetros Cuadrados', factor: 0.0001 },
-                    ha: { label: 'Hectáreas', factor: 10000 },
-                    ac: { label: 'Acres', factor: 4046.86 },
-                    ft2: { label: 'Pies Cuadrados', factor: 0.092903 }
-                }
-            },
-            temperatura: {
-                label: 'Temperatura',
-                icon: 'fa-temperature-high',
-                units: {
-                    C: { label: 'Celsius (°C)' },
-                    F: { label: 'Fahrenheit (°F)' },
-                    K: { label: 'Kelvin (K)' }
-                }
-            }
-        };
-
-        function App() {
-            const [activeCategory, setActiveCategory] = useState('longitud');
-            const [amount, setAmount] = useState('1');
-            
-            // Estado para las unidades
-            const [fromUnit, setFromUnit] = useState('m');
-            const [toUnit, setToUnit] = useState('km');
-            
-            const [copied, setCopied] = useState(false);
-
-            // --- RESOLUCIÓN SEGURA DE UNIDADES ---
-            const currentCategoryData = CATEGORIES[activeCategory];
-            const availableUnits = Object.keys(currentCategoryData.units);
-            
-            // Si la unidad actual no existe en la nueva categoría, usar la primera disponible por defecto
-            const safeFromUnit = currentCategoryData.units[fromUnit] ? fromUnit : availableUnits[0];
-            const safeToUnit = currentCategoryData.units[toUnit] ? toUnit : (availableUnits[1] || availableUnits[0]);
-
-            // Sincronizar estado
-            useEffect(() => {
-                if (safeFromUnit !== fromUnit) setFromUnit(safeFromUnit);
-                if (safeToUnit !== toUnit) setToUnit(safeToUnit);
-            }, [activeCategory, safeFromUnit, safeToUnit, fromUnit, toUnit]);
-
-            // --- LÓGICA DE CÁLCULO ---
-            const result = useMemo(() => {
-                if (amount === '' || isNaN(amount)) return '---';
-
-                const val = parseFloat(amount);
-                let converted = 0;
-
-                if (activeCategory === 'temperatura') {
-                    let celsius = val;
-                    if (safeFromUnit === 'F') celsius = (val - 32) * 5/9;
-                    if (safeFromUnit === 'K') celsius = val - 273.15;
-                    
-                    if (safeToUnit === 'C') converted = celsius;
-                    else if (safeToUnit === 'F') converted = (celsius * 9/5) + 32;
-                    else if (safeToUnit === 'K') converted = celsius + 273.15;
-                    else converted = celsius;
-                } else {
-                    const fromFactor = currentCategoryData.units[safeFromUnit]?.factor || 1;
-                    const toFactor = currentCategoryData.units[safeToUnit]?.factor || 1;
-                    converted = (val * fromFactor) / toFactor;
-                }
-
-                // Redondeo inteligente
-                return Math.abs(converted) < 0.000001 && converted !== 0
-                    ? converted.toExponential(4) 
-                    : parseFloat(converted.toPrecision(6)).toString();
-            }, [amount, activeCategory, safeFromUnit, safeToUnit, currentCategoryData]);
-
-            const handleSwap = () => {
-                setFromUnit(safeToUnit);
-                setToUnit(safeFromUnit);
-            };
-
-            const handleCopy = () => {
-                const unitLabel = currentCategoryData.units[safeToUnit].label.split('(')[0].trim();
-                navigator.clipboard.writeText(`${result} ${unitLabel}`);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-            };
-
-            return (
-                <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-                
-                    {/* Header Mobile-Friendly & Tablet Ready */}
-                    <header className="bg-indigo-600 text-white p-4 shadow-md z-10 sticky top-0">
-                        {/* Aumentamos max-w-5xl para permitir más ancho en tablets */}
-                        <div className="flex items-center justify-between max-w-5xl mx-auto w-full">
-                            <div className="flex items-center space-x-2">
-                                <i className={`fa-solid ${currentCategoryData.icon} text-xl md:text-2xl`}></i>
-                                <h1 className="text-xl md:text-2xl font-bold tracking-tight">Convertidor Pro</h1>
-                            </div>
-                            <div className="text-indigo-200 text-xs md:text-sm font-medium bg-indigo-800 px-3 py-1 rounded-full">
-                                {currentCategoryData.label}
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* Main Content */}
-                    {/* Usamos max-w-5xl y ajustamos el layout flex/grid según breakpoints (md: para tablets) */}
-                    <main className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                            
-                            {/* Category Selector Grid */}
-                            {/* En móvil ocupa todo el ancho, en tablet (md) ocupa 4 columnas a la izquierda */}
-                            <div className="md:col-span-4 lg:col-span-3 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Categorías</label>
-                                {/* Grid adaptable: 4 cols en móvil, 2 en tablet (panel lateral), 2 en escritorio */}
-                                <div className="grid grid-cols-4 md:grid-cols-2 gap-3">
-                                    {Object.entries(CATEGORIES).map(([key, data]) => {
-                                        const isActive = activeCategory === key;
-                                        return (
-                                            <button
-                                                key={key}
-                                                onClick={() => setActiveCategory(key)}
-                                                className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-200 aspect-square ${
-                                                    isActive 
-                                                    ? 'bg-indigo-50 text-indigo-600 ring-2 ring-indigo-500 ring-opacity-50' 
-                                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                <i className={`fa-solid ${data.icon} text-lg md:text-xl mb-1`}></i>
-                                                <span className="text-[10px] md:text-xs font-medium truncate w-full text-center">{data.label}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Conversion Card */}
-                            {/* En tablet ocupa el resto del espacio (8 columnas) */}
-                            <div className="md:col-span-8 lg:col-span-9 bg-white p-4 sm:p-8 rounded-3xl shadow-lg border border-gray-100 relative overflow-hidden flex flex-col justify-center min-h-[300px]">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-400 to-pink-500"></div>
-                                
-                                {/* Input Section */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="text-sm md:text-base text-gray-500 font-medium ml-1">Cantidad</label>
-                                        <input
-                                            type="number"
-                                            value={amount}
-                                            onChange={(e) => setAmount(e.target.value)}
-                                            className="w-full text-4xl md:text-5xl font-bold text-gray-800 bg-transparent border-b-2 border-gray-200 focus:border-indigo-500 focus:outline-none py-2 transition-colors placeholder-gray-300"
-                                            placeholder="0"
-                                        />
-                                    </div>
-
-                                    {/* Selectores: Flex columna en móvil, Fila en tablet/escritorio */}
-                                    <div className="flex flex-col sm:flex-row items-center gap-3 bg-gray-50 p-2 rounded-xl">
-                                        <select
-                                            value={safeFromUnit}
-                                            onChange={(e) => setFromUnit(e.target.value)}
-                                            className="w-full sm:flex-1 bg-white text-gray-700 py-3 px-4 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm md:text-base appearance-none cursor-pointer"
-                                        >
-                                            {Object.entries(currentCategoryData.units).map(([key, unit]) => (
-                                                <option key={key} value={key}>{unit.label}</option>
-                                            ))}
-                                        </select>
-                                        
-                                        <button 
-                                            onClick={handleSwap}
-                                            className="p-3 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors active:scale-95 shrink-0"
-                                            title="Intercambiar"
-                                        >
-                                            {/* Rotamos el icono 90 grados en móvil para que apunte arriba/abajo, normal en tablet */}
-                                            <i className="fa-solid fa-right-left text-lg transform rotate-90 sm:rotate-0"></i>
-                                        </button>
-
-                                        <select
-                                            value={safeToUnit}
-                                            onChange={(e) => setToUnit(e.target.value)}
-                                            className="w-full sm:flex-1 bg-white text-gray-700 py-3 px-4 rounded-lg shadow-sm border-none focus:ring-2 focus:ring-indigo-500 font-medium text-sm md:text-base appearance-none cursor-pointer"
-                                        >
-                                            {Object.entries(currentCategoryData.units).map(([key, unit]) => (
-                                                <option key={key} value={key}>{unit.label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Result Section */}
-                                <div className="mt-8 pt-8 border-t border-gray-100 text-center">
-                                    <p className="text-sm text-gray-400 font-medium mb-2">Resultado</p>
-                                    <div className="flex flex-col items-center justify-center cursor-pointer group" onClick={handleCopy}>
-                                        <span className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 break-all leading-tight">
-                                            {result}
-                                        </span>
-                                        <span className="text-lg md:text-xl text-gray-500 font-medium mt-2">
-                                            {currentCategoryData.units[safeToUnit].label}
-                                        </span>
-                                        
-                                        <div className="mt-4 flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}></i>
-                                            <span>{copied ? 'Copiado' : 'Copiar'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </main>
-                    
-                    {/* Footer */}
-                    <footer className="p-4 text-center text-gray-400 text-xs md:text-sm">
-                        <p>Convertidor Universal • React & Tailwind</p>
-                    </footer>
-                </div>
-            );
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nocturno - Explorar Temas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#0b1326",
+                      "on-background": "#dae2fd",
+                      "surface-container-lowest": "#060e20",
+                      "inverse-surface": "#dae2fd",
+                      "outline": "#958ea0",
+                      "surface-container-low": "#131b2e",
+                      "on-error": "#690005",
+                      "secondary-fixed-dim": "#3cddc7",
+                      "surface-container": "#171f33",
+                      "primary-fixed": "#e9ddff",
+                      "tertiary": "#c4c1fb",
+                      "on-primary-container": "#340080",
+                      "surface-container-high": "#222a3d",
+                      "on-secondary-container": "#004d44",
+                      "error": "#ffb4ab",
+                      "on-secondary-fixed": "#00201c",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-container": "#8e8bc2",
+                      "on-tertiary": "#2d2a5b",
+                      "on-secondary": "#003731",
+                      "on-tertiary-container": "#262354",
+                      "surface-variant": "#2d3449",
+                      "on-primary-fixed-variant": "#5516be",
+                      "surface-dim": "#0b1326",
+                      "primary-fixed-dim": "#d0bcff",
+                      "outline-variant": "#494454",
+                      "error-container": "#93000a",
+                      "primary": "#d0bcff",
+                      "background": "#0b1326",
+                      "secondary": "#44e2cd",
+                      "on-secondary-fixed-variant": "#005047",
+                      "on-tertiary-fixed": "#181445",
+                      "inverse-primary": "#6d3bd7",
+                      "on-primary": "#3c0091",
+                      "on-primary-fixed": "#23005c",
+                      "secondary-fixed": "#62fae3",
+                      "on-tertiary-fixed-variant": "#444173",
+                      "tertiary-fixed": "#e3dfff",
+                      "secondary-container": "#03c6b2",
+                      "on-surface-variant": "#cbc3d7",
+                      "inverse-on-surface": "#283044",
+                      "surface-tint": "#d0bcff",
+                      "tertiary-fixed-dim": "#c4c1fb",
+                      "surface-bright": "#31394d",
+                      "primary-container": "#a078ff",
+                      "surface-container-highest": "#2d3449",
+                      "on-surface": "#dae2fd"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "body-sm": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-lg": [
+                              "EB Garamond"
+                      ],
+                      "headline-xl": [
+                              "EB Garamond"
+                      ],
+                      "body-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "EB Garamond"
+                      ],
+                      "chat-text": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-xl": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "chat-text": [
+                              "15px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
     </script>
-</body>
-</html>
-
-
+<style>
+        body {
+            background-color: #0b1326; /* surface */
+            color: #dae2fd; /* on-surface */
+        }
+        .glow-effect {
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.15);
+        }
+        .bento-card {
+            background-color: #0F172A; /* Surface Level 1 */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col pt-16 pb-20">
+<!-- TopAppBar (from JSON) -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-md shadow-[0_4px_20px_rgba(139,92,246,0.15)] flex justify-between items-center px-margin-mobile h-16 md:hidden">
+<button aria-label="Menu" class="text-primary hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">auto_awesome</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary drop-shadow-[0_0_8px_rgba(208,188,255,0.4)]">Nocturno</h1>
+<button aria-label="Settings" class="text-primary hover:text-secondary transition-colors duration-300 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<!-- Desktop Nav Cluster (Hidden on mobile) -->
+<header class="hidden md:flex fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md shadow-[0_4px_20px_rgba(139,92,246,0.15)] justify-between items-center px-margin-desktop h-20">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
+<h1 class="font-headline-lg text-headline-lg text-primary drop-shadow-[0_0_8px_rgba(208,188,255,0.4)]">Nocturno</h1>
+</div>
+<nav class="flex gap-8">
+<a class="flex items-center gap-2 text-secondary drop-shadow-[0_0_10px_rgba(68,226,205,0.5)] transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-label-caps text-label-caps">Explorar</span>
+</a>
+<a class="flex items-center gap-2 text-outline hover:text-on-surface transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-caps text-label-caps">Chats</span>
+</a>
+<a class="flex items-center gap-2 text-outline hover:text-on-surface transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-caps text-label-caps">Perfil</span>
+</a>
+</nav>
+<button aria-label="Settings" class="text-primary hover:text-secondary transition-colors duration-300">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg mt-4 md:mt-12">
+<!-- Header Section -->
+<section class="mb-stack-lg text-center md:text-left">
+<h2 class="font-headline-xl text-headline-xl text-on-surface mb-stack-sm">Reinos de Indagación</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                Desciende a los archivos. Selecciona una disciplina para comenzar tu exploración nocturna de lo profundo y lo peculiar.
+            </p>
+</section>
+<!-- Bento Grid for Topics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter auto-rows-[250px]">
+<!-- Philosophy -->
+<a class="bento-card rounded-xl p-stack-md flex flex-col justify-between group relative overflow-hidden" href="https://www.appcreator24.com/app3889503/zonagris">
+<!-- Atmospheric background element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+<div class="z-10">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md border border-outline/20 group-hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 0;">account_balance</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface mb-unit">Filosofía</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3">
+                        Interactúa con la naturaleza fundamental del conocimiento, la realidad y la existencia. Desde el estoicismo hasta el existencialismo, cuestiona el tejido mismo del ser.
+                    </p>
+</div>
+<div class="z-10 flex justify-between items-end mt-auto">
+<span class="font-label-caps text-label-caps text-outline group-hover:text-secondary transition-colors">Entrar al Reino</span>
+<span class="material-symbols-outlined text-outline group-hover:text-secondary transition-transform group-hover:translate-x-1">arrow_forward</span>
+</div>
+</a>
+<!-- Paranormal -->
+<a class="bento-card rounded-xl p-stack-md flex flex-col justify-between group relative overflow-hidden md:row-span-2 lg:row-span-1" href="#">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+<div class="z-10">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md border border-outline/20 group-hover:border-secondary/50 transition-colors">
+<span class="material-symbols-outlined text-3xl text-secondary" style="font-variation-settings: 'FILL' 0;">blur_on</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface mb-unit">Paranormal</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                        Investiga fenómenos que yacen más allá del alcance del entendimiento científico normal. Apariciones, críptidos y anomalías energéticas inexplicables.
+                    </p>
+</div>
+<div class="z-10 flex justify-between items-end mt-stack-md">
+<span class="font-label-caps text-label-caps text-outline group-hover:text-secondary transition-colors">Entrar al Reino</span>
+<span class="material-symbols-outlined text-outline group-hover:text-secondary transition-transform group-hover:translate-x-1">arrow_forward</span>
+</div>
+</a>
+<!-- Science -->
+<a class="bento-card rounded-xl p-stack-md flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+<div class="z-10">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md border border-outline/20 group-hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-3xl text-primary" style="font-variation-settings: 'FILL' 0;">science</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface mb-unit">Ciencia</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3">
+                        El estudio sistemático del mundo físico y natural a través de la observación y el experimento. De la física cuántica a la cosmología.
+                    </p>
+</div>
+<div class="z-10 flex justify-between items-end mt-auto">
+<span class="font-label-caps text-label-caps text-outline group-hover:text-secondary transition-colors">Entrar al Reino</span>
+<span class="material-symbols-outlined text-outline group-hover:text-secondary transition-transform group-hover:translate-x-1">arrow_forward</span>
+</div>
+</a>
+<!-- Conspiracies -->
+<a class="bento-card rounded-xl p-stack-md flex flex-col justify-between group relative overflow-hidden" href="#">
+<div class="absolute top-0 right-0 w-32 h-32 bg-error/10 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+<div class="z-10">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-md border border-outline/20 group-hover:border-error/50 transition-colors">
+<span class="material-symbols-outlined text-3xl text-error" style="font-variation-settings: 'FILL' 0;">visibility</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface mb-unit">Conspiraciones</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-3">
+                        Analiza narrativas alternativas e historias ocultas. Un examen crítico del poder, el secreto y las narrativas sociales.
+                    </p>
+</div>
+<div class="z-10 flex justify-between items-end mt-auto">
+<span class="font-label-caps text-label-caps text-outline group-hover:text-error transition-colors">Entrar al Reino</span>
+<span class="material-symbols-outlined text-outline group-hover:text-error transition-transform group-hover:translate-x-1">arrow_forward</span>
+</div>
+</a>
+</div>
+</main>
+<!-- BottomNavBar (from JSON, mobile only) -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-lowest/90 dark:bg-surface-container-lowest/90 backdrop-blur-lg shadow-[0_-4px_20px_rgba(139,92,246,0.1)] flex justify-around items-center h-20 pb-safe px-4 md:hidden">
+<!-- Explore (Active) -->
+<a class="flex flex-col items-center justify-center text-secondary drop-shadow-[0_0_10px_rgba(68,226,205,0.5)] active:scale-90 duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-label-caps text-label-caps">Explorar</span>
+</a>
+<!-- Chats (Inactive) -->
+<a class="flex flex-col items-center justify-center text-outline hover:text-on-surface transition-all active:scale-90 duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1">chat_bubble</span>
+<span class="font-label-caps text-label-caps">Chats</span>
+</a>
+<!-- Profile (Inactive) -->
+<a class="flex flex-col items-center justify-center text-outline hover:text-on-surface transition-all active:scale-90 duration-200 w-16" href="#">
+<span class="material-symbols-outlined mb-1">account_circle</span>
+<span class="font-label-caps text-label-caps">Perfil</span>
+</a>
+</nav>
+</body></html>
